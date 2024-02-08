@@ -34,28 +34,68 @@ class WeatherManager: ObservableObject {
         
         let decodedData = try JSONDecoder().decode(ResponseBody.self, from: data)
         
+        Task {
+            self.weatherModel = decodedData
+        }
         return decodedData
     }
     
+//    func getLatLonFromCity(cityName: String) {
+//        geoCode.geocodeAddressString(cityName, completionHandler: { (placemarks, error) in
+//            if (error != nil) {
+//                self.didFind = false
+//                print("Failed to fetch location")
+//                return
+//            }
+//            if let placemarks = placemarks {
+//                self.lat = placemarks[0].location?.coordinate.latitude ?? 0.0
+//                self.lon = placemarks[0].location?.coordinate.longitude ?? 0.0
+//                self.didFind = true
+//                print(self.lat)
+//                print(self.lon)
+//                
+//                Task {
+//                    self.weatherModel = try await self.getCurrentWeather(latitude: self.lat, longitude: self.lon)
+//                }
+//            }
+//        })
+//    }
     func getLatLonFromCity(cityName: String) {
-        geoCode.geocodeAddressString(cityName, completionHandler: { (placemarks, error) in
-            if (error != nil) {
+        geoCode.geocodeAddressString(cityName) { [weak self] (placemarks, error) in
+            guard let self = self else { return }
+
+            if let error = error {
                 self.didFind = false
-                print("Failed to fetch location")
+                print("Failed to fetch location: \(error)")
                 return
             }
+
             if let placemarks = placemarks {
                 self.lat = placemarks[0].location?.coordinate.latitude ?? 0.0
                 self.lon = placemarks[0].location?.coordinate.longitude ?? 0.0
                 self.didFind = true
                 print(self.lat)
                 print(self.lon)
-                
+
                 Task {
-                    self.weatherModel = try await self.getCurrentWeather(latitude: self.lat, longitude: self.lon)
+                    do {
+                        let weatherData = try await self.getCurrentWeather(latitude: self.lat, longitude: self.lon)
+                        self.onMain {
+                            self.weatherModel = weatherData
+                        }
+                    } catch {
+                        print("Error fetching weather data: \(error)")
+                    }
                 }
             }
-        })
+        }
+    }
+    
+    // Helper function to run code on the main thread
+    func onMain(_ work: @escaping () -> Void) {
+        DispatchQueue.main.async {
+            work()
+        }
     }
 }
 

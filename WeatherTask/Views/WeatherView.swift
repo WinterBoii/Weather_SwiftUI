@@ -22,31 +22,9 @@ struct WeatherView: View {
     
     var body: some View {
         NavigationStack {
-            
-            
             ZStack(alignment: .leading)
             {
                 VStack {
-                    /*TextField("Search city", text: $cityInput)
-                        .onSubmit {
-                            weatherManager.getLatLonFromCity(cityName: cityInput)
-                            print("cityInput")
-                            city = cityInput
-                            cityInput = ""
-                            
-                        }
-                        .font(.system(size: 30))
-                        .zIndex(1000)*/
-                    
-                    Section {
-                        NavigationLink(destination: SearchCityView()) {
-                            Text("Search other cities")
-                                .font(.system(size: 20))
-                                .bold()
-                                
-                        }
-                    }
-                    
                     HStack {
                         VStack(alignment: .leading, spacing:  5) {
                             
@@ -60,6 +38,16 @@ struct WeatherView: View {
                         }
                         
                         Spacer()
+                        
+                        Section {
+                            NavigationLink(destination: SearchCityView()) {
+                                VStack() {
+                                    Image(systemName: "magnifyingglass")
+                                        .font(.title)
+                                    Text("Search")
+                                }
+                            }
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     
@@ -116,11 +104,13 @@ struct WeatherView: View {
                         
                         ScrollView(.horizontal) {
                             HStack {
-                                
-                                ForEach(0..<24) { hour in
+                                let startIndex = indexOfCurrentHour() 
+                                let endIndex = min(startIndex + 24, weather.hourly.time.count)
+                                let range = startIndex..<endIndex
+
+                                ForEach(range, id: \.self) { hour in
                                     VStack {
-                                        //Text(formatter.convertDateFormatToHour(inputDate: weatherManager.weatherModel?.hourly.time[hour] ?? weather.hourly.time[hour]))
-                                        Text("\(weatherManager.weatherModel?.hourly.time[hour] ?? "")")
+                                        Text(formatter.convertDateFormatToHour(inputDate: weatherManager.weatherModel?.hourly.time[hour] ?? weather.hourly.time[hour]))
                                         Text("\(Image(systemName: "umbrella.percent")) \(weatherManager.weatherModel?.hourly.weathercode[hour] ?? 1)%")
                                             .font(.title3)
                                             .padding()
@@ -147,7 +137,7 @@ struct WeatherView: View {
                                         
                                         HStack {
                                             Text(formatter.convertDateFormat(inputDate: weatherManager.weatherModel?.daily.time[day] ?? weather.daily.time[day]))
-                                                .font(.system(size: 35))
+                                                .font(.system(size: 24))
                                                 .frame(width: 70)
                                             
                                             Spacer().frame(width: 40)
@@ -161,8 +151,8 @@ struct WeatherView: View {
                                             
                                             Spacer().frame(width: 30)
                                             
-                                            Image(systemName: formatter.weatherCode(code: weatherManager.weatherModel?.daily.weathercode[day] ?? 0))
-                                                .font(.system(size: 31))
+                                            Image(systemName: formatter.weatherCode(code: weatherManager.weatherModel?.daily.weathercode[day] ?? 1))
+                                                .font(.system(size: 30))
                                             
                                             
                                         }
@@ -177,7 +167,7 @@ struct WeatherView: View {
                         .padding()
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .frame(maxHeight: 470, alignment: .top)
+                    .frame(maxHeight: 440, alignment: .top)
                     .padding()
                     .background(Color(hue: 0.746, saturation: 0.488, brightness: 0.452).opacity(0.6).shadow(.inner(radius: 50)))
                     .cornerRadius(35, corners: [.topLeft, .topRight])
@@ -204,6 +194,43 @@ struct WeatherView: View {
         }
         return false
     }
+    
+    // Function to get the next 24 hours from the current time
+    func next24Hours() -> [String] {
+        let hourArray = weather.hourly.time
+        let currentDate = weather.current_weather.time
+        // Formatter for parsing the hour from the date string
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
+        
+        // Find the index of the current hour in the array
+        if let currentIndex = hourArray.firstIndex(of: currentDate) {
+            // Display the next 24 hours starting from the current index
+            let endIndex = min(currentIndex + 24, hourArray.count)
+            let next24Hours = Array(hourArray[currentIndex..<endIndex])
+            return next24Hours
+        } else {
+            return ["nothing"]
+        }
+    }
+
+    // Function to get the index of the current hour for the next 24 hours
+    func indexOfCurrentHour() -> Int {
+        let hourArray = weather.hourly.time
+        let currentDate = weather.current_weather.time
+        // Formatter for parsing the hour from the date string
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH"
+        
+        // Find the index of the current hour in the array
+        if let currentIndex = hourArray.firstIndex(of: currentDate) {
+            return currentIndex
+        } else {
+            return 0
+        }
+    }
+
+    
 }
 
 struct WeatherView_Previews: PreviewProvider {
